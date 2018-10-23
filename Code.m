@@ -1,32 +1,13 @@
 %% Input
 S     = 100;
-K     = 80;
+K     = 50;
 T     = 10;
 r     = 0.05;
 D     = 0.0;
 sigma = 0.15;
-type  = 'Put';
+type  = 'Call';
 
-%% Plot options
-optionType = lower(type);
-switch lower(optionType)
-    case 'call'
-        f = @(x)max(0,x-K*exp(-r*T));
-    case 'put'
-        f = @(x)max(0,K*exp(-r*T)-x);
-        p = @(x)max(0,K-x);
-end 
-for ST = 1:S*1.5 % Adjust 1.5 if you want more along the x-axis
-    [CallEur(ST),PutEur(ST)] = blsprice(ST,K,r,T,sigma);
-    po1(ST) = f(ST);
-    po2(ST) = p(ST); 
-end
-prices    = [CallEur',PutEur'];
-c         = {'call','put'};
-ind       = find(ismember(c,optionType));
-pricesOut = prices(:,ind);
-
-
+% Make the plots sexy
 set(groot, 'defaultTextInterpreter', 'LaTex');  
 set(groot, 'defaultAxesTickLabelInterpreter', 'LaTex');  
 set(groot, 'defaultLegendInterpreter', 'LaTex');  
@@ -34,20 +15,59 @@ set(groot, 'defaultLineLineWidth', 2);
 set(groot, 'defaultAxesFontSize', 16);
 set(groot, 'defaultLegendFontSize', 16);
 set(groot, 'defaultAxesLineStyleOrder', '-|:|--');
-plot(po1)
-hold on
-plot(po2)
-plot(pricesOut,'k--')
-hold off
-legend('Lower bound', 'Payoff', [type,' value'],'Location','North')
-legend('boxoff') 
-xlim([1 ST])
-ylim([0 ST])
-xticks(K)
-xticklabels({['K = ' int2str(K)]})
-title([type ' option, strike = ' K])
 
-
+%% Plot options
+optionType = lower(type);
+switch lower(optionType)
+    case 'call'
+        f  = @(x)max(0,x-K*exp(-r*T));
+        pT = @(x)max(0,x-K);
+        pLb = 1:S*1.5;
+        for ST = 1:S*1.5 
+            [CallEur(ST), ~] = blsprice(ST,K,r,T,sigma);
+            pL(ST) = f(ST);
+            pU(ST) = pT(ST); 
+        end
+        figure(1)
+        plot(pL)
+        hold on
+        plot(CallEur,'k--')
+        plot(pU)
+        plot(pLb)
+        hold off
+        legend('Lower bound','Call value' , 'Payoff','Upper bound',...
+               'Location','Northwest')
+        legend('boxoff') 
+        xlim([1 ST])
+        ylim([0 ST])
+        xticks(K)
+        xticklabels({['K = ' int2str(K)]})
+        title([type ' option, strike = ' int2str(K)])
+        
+    case 'put'
+        f = @(x)max(0,K*exp(-r*T)-x);
+        p  = @(x)max(0,K-x);
+        for ST = 1:S*1.5 
+            [ ~,PutEur(ST)] = blsprice(ST,K,r,T,sigma);
+            pL(ST) = f(ST);
+            pU(ST) = p(ST); 
+        end
+        figure(1)
+        plot(pU)
+        hold on
+        plot(pL)
+        plot(PutEur,'k--')
+        plot(repmat(K*exp(-r*T),length(PutEur),1))
+        hold off
+        legend( 'Payoff','Lower bound','Put value','Upper bound','Location','North')
+        legend('boxoff') 
+        xlim([1 ST])
+        ylim([0 ST])
+        xticks(K)
+        xticklabels({['K = ' int2str(K)]})
+        title([type ' option, strike = ' int2str(K)])
+        
+end 
 %% Binomial option price converge to Black-Scholes option price
 % Since the Black-Scholes price is a limiting case of the Binomial model as
 % n -> \infty, we should also see a clear convergence when increasing the
@@ -86,14 +106,12 @@ for ff = 10:L
     
     for ii = 2:length(nodes)
         for jj = 2:indTemp(ii)+1
-            payoffnodes(jj-1,indTemp(ii)) = exp(-1*riskfree*t)*(payoffnodes(...
-                    jj-1,indTemp(ii-1))*p+payoffnodes(jj,indTemp(ii-1))*(1-p));
+            payoffnodes(jj-1,indTemp(ii)) = exp(-1*riskfree*t)*...
+                       (payoffnodes(jj-1,indTemp(ii-1))*p+...
+                        payoffnodes(jj,indTemp(ii-1))*(1-p));
         end
     end
-    
     optionVal(ff-9) = payoffnodes(1);
-
-
 end
 
 ind            = 1:10:L;
@@ -105,21 +123,21 @@ c              = {'call','put'};
 indT           = find(ismember(c,type));
 prices         = [bsCall,bsPut];
 blsprices      = repmat(prices(:,indT),L-start+1,1);
+figure(2)
 plot(ind,oPsmooth)
 hold on
-plot(blprice)
+plot(blsprices)
 hold off
 legend('Binomial price', 'Black-Scholes price','Location','North')
 legend('boxoff') 
 xlim([0 ,L-start])
-title('Binomial option pricing vs. Black-Scholes')
+title(['Binomial option pricing vs. BS - Type = ' , type])
 xlabel('Number of periods')
-
 
 %% Brownian Motion (Wiener process)
 % Assuming that S_t ~ GBM with unconditional variance
 % Set parameters
-nStep   = 10;
+nStep   = 1000;
 T       = 1;
 mu      = .15;
 sigma_w = sqrt(T/nStep);
@@ -135,14 +153,20 @@ t       = (1:nStep)'./nStep;
 % symmetric stochastic process with mean zero (because of symmetry) and
 % variance sigma_w.
 dW = cumsum(normrnd(0,sigma_w,nStep,1));
+figure(4)
 plot(dW)
+title('Brownian Motion')
 
 % We can also create 1000 of these:
 dWmat = cumsum(normrnd(0,sigma_w,nStep,1000));
+figure(5)
 plot(dWmat)
+title('Brownian Motion - 1000 simulations')
 
 % Distribution of final outcomes
+figure(6)
 histogram(dWmat(end,:))
+title('Distribution of final outcomes - BM')
 
 % We see from the histogram that the outcomes appears to be nicely normally
 % distributed with a mean of 0. This implies that approximately 50% of the 
@@ -151,58 +175,92 @@ histogram(dWmat(end,:))
 % Geometric Brownian Motion (as assumed in the BS-model). The GBM is on the
 % form S_t = S_0*exp(mu*t + sigma*W_t)
 GBM = exp(mu*t + sigma*dW);
+figure(7)
 plot(GBM)
+title('Geometric Brownian Motion')
 
 % We can also do this 1000 times
 GBMmat = exp(mu*t + sigma*dWmat);
+figure(8)
+plot(GBMmat)
+title('Geometric Brownian Motion - 1000 simulations')
 
 % Distribution of final outcomes
+figure(9)
 histogram(GBMmat(end,:))
+title('Distribution of final outcomes - GBM')
 
 % We see from the distribution plot that the outcomes now appears to be
 % nicely log-normally distributed, just as we assume the stockprices are
 
 
+%% 3D plot Greeks
+start_t = 0.04;
+S1      = [0:0.3:100];
+T1      = [start_t:0.01:5];
+rf      = 0.06;
+sigma   = 0.2;
+K       = 50;
+S       = repmat(S1,length(T1),1);
+T       = repmat(T1',1,length(S1));
+delta   = nan(length(T1),length(S1)-1);
+deltap  = nan(length(T1),length(S1)-1);
 
 
+for ii = 1:length(T1)
+    for jj = 1:length(S1)-1
+        [Callprice1, Putprice1] = blsprice(S1(jj),K,rf,T1(ii),sigma); 
+        [Callprice2, Putprice2] = blsprice(S1(jj+1),K,rf,T1(ii),sigma);
+        f            =  Callprice2-Callprice1;
+        fp           =  Putprice2-Putprice1;
+        delta(ii,jj) = f;
+        deltap(ii,jj)= fp;
+    end
+end
+delta(isnan(delta))   = 0;
+deltap(isnan(deltap)) = 0;
+
+figure(10)
+mesh(delta)
+zlabel('$\frac{dc}{dS}$')
+xlabel('$S$')
+ylabel('t')
+xticks('')
+ylabel('$\partial t$')
+title(['Delta of a Call option'])
 
 
+figure(11)
+mesh(deltap)
+zlabel('$\frac{dp}{dS}$')
+xlabel('$S$')
+ylabel('t')
+xticks('')
+ylabel('$\partial t$')
+title(['Delta of a Put option'])
 
 
+for ii = 1:length(T1)
+    for jj = 1:length(S1)-2
+       gamma(ii,jj)= delta(ii,jj+1)-delta(ii,jj);
+       gammap(ii,jj)= deltap(ii,jj+1)-deltap(ii,jj);
+    end
+end
 
+figure(12)
+mesh(gamma)
+zlabel('$\frac{d^2c}{dS^2}$')
+xlabel('$S$')
+ylabel('t')
+xticks('')
+ylabel('$\partial t$')
+title(['Gamma of a Call option'])
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+figure(13)
+mesh(gammap)
+zlabel('$\frac{d^2p}{dS^2}$')
+xlabel('$S$')
+ylabel('t')
+xticks('')
+ylabel('$\partial t$')
+title(['Gamma of a Put option'])

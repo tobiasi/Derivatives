@@ -264,3 +264,24 @@ ylabel('t')
 xticks('')
 ylabel('$\partial t$')
 title(['Gamma of a Put option'])
+
+
+%% Implied volatility
+optionprice = 3;
+k           = 15;
+s           = 17;
+r           = 0.03;
+guess       = 0.10;
+T           = 1;
+e           = 0.5;
+while abs(e)>0.005
+    
+    [n,~] = blsprice(s, k, r, T, guess);
+    e     = n - optionprice;
+    if e>0
+        guess=guess-0.001;
+    else
+        guess=guess+0.001;
+    end
+    
+end

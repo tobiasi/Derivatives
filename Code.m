@@ -72,21 +72,21 @@ end
 % Since the Black-Scholes price is a limiting case of the Binomial model as
 % n -> \infty, we should also see a clear convergence when increasing the
 % number of periods
-L         = 1000;
+%==================%
+K        = 20;      % Strike
+sigma    = 0.30;    % Vol
+riskfree = 0.0787;  % risk-free interest rate
+divYield = 0;       % Dividend yield
+s        = 15;      % Current stock price
+type     = 'call';  % Type of option
+L        = 1000;    % Amount of intermediate periods
+T        = 1;       % Amount of periods
+%==================%
 start     = 10;
 optionVal = nan(L-start+1,1);
 for ff = 10:L
-    % --------------------------------------- %
-    n        = ff;
-    T        = 1;
-    t        = T/n;
-    K        = 20;
-    sigma    = 0.30;
-    riskfree = 0.0787;
-    divYield = 0;
-    s        = 15;
-    type     = 'call';
-    % ---------------------------------------- %
+    n = ff;
+    t = T/n;
     switch type
         case 'call'
             f = @(x)max(0,x-K);

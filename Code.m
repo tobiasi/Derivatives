@@ -196,8 +196,8 @@ title('Distribution of final outcomes - GBM')
 
 %% 3D plot Greeks
 start_t = 0.04;
-S1      = [0:0.3:100];
-T1      = [start_t:0.01:5];
+S1      = 0:0.3:100;
+T1      = start_t:0.01:5;
 rf      = 0.06;
 sigma   = 0.2;
 K       = 50;
@@ -274,14 +274,16 @@ r           = 0.03;
 guess       = 0.10;
 T           = 1;
 e           = 0.5;
-while abs(e)>0.005
+while abs(e)>0.0001
     
     [n,~] = blsprice(s, k, r, T, guess);
     e     = n - optionprice;
     if e>0
-        guess=guess-0.001;
+        guess=guess-0.00001;
     else
-        guess=guess+0.001;
+        guess=guess+0.00001;
     end
     
 end
+
+impliedVol = guess;

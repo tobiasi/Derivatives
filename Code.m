@@ -143,6 +143,7 @@ mu      = .15;
 sigma_w = sqrt(T/nStep);
 t       = (1:nStep)'./nStep;
 
+
 % A brownian motion is simply a process which is the sum of a stochastic
 % process defined on a probability space which fullfills three properties: 
 % i)   Integrability, |E[W_T]| < +\infty  
@@ -174,13 +175,13 @@ title('Distribution of final outcomes - BM')
 % which are bounded by zero. A solution is to model the stock prices as a 
 % Geometric Brownian Motion (as assumed in the BS-model). The GBM is on the
 % form S_t = S_0*exp(mu*t + sigma*W_t)
-GBM = exp(mu*t + sigma*dW);
+GBM = exp((mu-0.5*sigma_w)*t + sigma_w*dW);
 figure(7)
 plot(GBM)
 title('Geometric Brownian Motion')
 
 % We can also do this 1000 times
-GBMmat = exp(mu*t + sigma*dWmat);
+GBMmat = exp((mu-0.5*sigma_w)*t + sigma_w*dWmat);
 figure(8)
 plot(GBMmat)
 title('Geometric Brownian Motion - 1000 simulations')
@@ -192,6 +193,15 @@ title('Distribution of final outcomes - GBM')
 
 % We see from the distribution plot that the outcomes now appears to be
 % nicely log-normally distributed, just as we assume the stockprices are
+
+
+[lineh, bandsh] = fanChart(1:size(GBMmat,1), GBMmat,'mean',5:1:95,...
+                           'colormap','shadesOfRed');
+hold on
+plot(GBMmat(:,1:5),'LineWidth',2)
+title(['GBM, uncertainty fan after ',int2str(size(GBMmat,2)),' simulations'])
+
+
 
 
 %% 3D plot Greeks

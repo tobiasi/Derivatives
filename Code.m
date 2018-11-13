@@ -201,8 +201,16 @@ hold on
 plot(GBMmat(:,1:5),'LineWidth',2)
 title(['GBM, uncertainty fan after ',int2str(size(GBMmat,2)),' simulations'])
 
-
-
+%% Pricing options using geometric brownian motion
+% Assuming that S_t ~ GBM with unconditional variance
+% Set parameters
+nStep   = 1000;
+T       = 1;
+mu      = .15;
+sigma_w = sqrt(T/nStep);
+t       = (1:nStep)'./nStep;
+dWmat   = cumsum(normrnd(0,sigma_w,nStep,1000));
+GBMmat  = exp((mu-0.5*sigma_w)*t + sigma_w*dWmat);
 
 %% 3D plot Greeks
 start_t = 0.04;
@@ -297,3 +305,17 @@ while abs(e)>0.0001
 end
 
 impliedVol = guess;
+
+
+%% Optimal starting date of project
+% Create a function handle with objective function
+npv = @(t) -1*1.05^(-t)*((0.55*1.04^t)/(0.01)-28);
+
+% Initial Guess
+initialGuess = 1;
+
+% Do minimize the objective function
+optimalDate = fminsearch(npv,initialGuess);
+
+% The net present value conditioned on optimal starting date is
+NPV = -1*npv(optimalDate);
